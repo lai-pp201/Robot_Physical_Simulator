@@ -1,0 +1,27 @@
+# Unity caches
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+
+# Package Cache
+Packages/PackageCache/
+
+# IDE related
+.vs/
+.vscode/
+.idea/
+
+# Project files to ignore
+*.csproj
+*.sln
+*.user
+*.pidb
+*.suo
+*.tmp
+*.booproj
+*.svd
