@@ -823,7 +823,7 @@ Transform:
   m_GameObject: {fileID: 919258663}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -4.738, y: 0.7106297, z: -0.8825391}
+  m_LocalPosition: {x: -4.732, y: 0.7106297, z: -0.8825391}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1627,6 +1627,8 @@ MonoBehaviour:
   _motorSpeed: 5
   _wheelLeft: {fileID: 919258668}
   _wheelRight: {fileID: 8569057028702177627}
+  leftWheelMesh: {fileID: 919258664}
+  rightWheelMesh: {fileID: 2274540267026592303}
 --- !u!23 &7959161183703566017
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1712,7 +1714,7 @@ WheelCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7650506754810990067}
   serializedVersion: 2
-  m_Center: {x: 1.52, y: 0.795, z: -0.186}
+  m_Center: {x: 1.515, y: 0.795, z: -0.186}
   m_Radius: 0.09
   m_SuspensionSpring:
     spring: 2000
