@@ -49,7 +49,7 @@ public class WheelControl : MonoBehaviour
             //float leftMotor = (Input.GetKey(KeyCode.A)) ? _motorSpeed : 0;
             //float rightMotor = (Input.GetKey(KeyCode.D)) ? _motorSpeed : 0;
 
-            _wheelLeft.motorTorque = leftMotor;
+        _wheelLeft.motorTorque = leftMotor;
         _wheelRight.motorTorque = rightMotor;
 
         //_wheelLeft.GetWorldPose(out Vector3 posL, out Quaternion rotL);
