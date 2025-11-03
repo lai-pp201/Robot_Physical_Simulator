@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class WheelControl : MonoBehaviour
 {
-    [SerializeField] private float _motorSpeed = 5;
+    [SerializeField] private float _motorSpeed = 15;
 
     [SerializeField] private WheelCollider _wheelLeft;
     [SerializeField] private WheelCollider _wheelRight;
-    public Transform leftWheelMesh;
-    public Transform rightWheelMesh;
+    //public Transform leftWheelMesh;
+    //public Transform rightWheelMesh;
     float leftMotor;
     float rightMotor;
     // Start is called before the first frame update
