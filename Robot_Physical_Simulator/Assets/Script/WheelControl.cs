@@ -21,36 +21,36 @@ public class WheelControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKey(KeyCode.W))
-        {
-            leftMotor = _motorSpeed;
-            rightMotor = _motorSpeed;
-        }
-        else if (Input.GetKey(KeyCode.S))
-        {
-            leftMotor = -_motorSpeed;
-            rightMotor = -_motorSpeed;
-        }
-        else if (Input.GetKey(KeyCode.A))
-        {
-            leftMotor = -_motorSpeed;
-            rightMotor = _motorSpeed;
-        }
-        else if (Input.GetKey(KeyCode.D))
-        {
-            leftMotor = _motorSpeed;
-            rightMotor = -_motorSpeed;
-        }
-        else
-        {
-            leftMotor = 0;
-            rightMotor = 0;
-        }
+        //if (Input.GetKey(KeyCode.W))
+        //{
+        //    leftMotor = _motorSpeed;
+        //    rightMotor = _motorSpeed;
+        //}
+        //else if (Input.GetKey(KeyCode.S))
+        //{
+        //    leftMotor = -_motorSpeed;
+        //    rightMotor = -_motorSpeed;
+        //}
+        //else if (Input.GetKey(KeyCode.A))
+        //{
+        //    leftMotor = -_motorSpeed;
+        //    rightMotor = _motorSpeed;
+        //}
+        //else if (Input.GetKey(KeyCode.D))
+        //{
+        //    leftMotor = _motorSpeed;
+        //    rightMotor = -_motorSpeed;
+        //}
+        //else
+        //{
+        //    leftMotor = 0;
+        //    rightMotor = 0;
+        //}
             //float leftMotor = (Input.GetKey(KeyCode.A)) ? _motorSpeed : 0;
             //float rightMotor = (Input.GetKey(KeyCode.D)) ? _motorSpeed : 0;
 
-        _wheelLeft.motorTorque = leftMotor;
-        _wheelRight.motorTorque = rightMotor;
+        _wheelLeft.motorTorque = this.gameObject.GetComponent<Move>().leftWheelSpeed;
+        _wheelRight.motorTorque = this.gameObject.GetComponent<Move>().rightWheelSpeed;
 
         //_wheelLeft.GetWorldPose(out Vector3 posL, out Quaternion rotL);
         //leftWheelMesh.position = posL;
