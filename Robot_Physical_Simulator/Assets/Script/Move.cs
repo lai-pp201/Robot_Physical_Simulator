@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Move : MonoBehaviour
 {
     public GameObject goal;
     public GameObject face;
+    public GameObject user;
     public float leftWheelSpeed;
     public float rightWheelSpeed;
     bool move = false;
@@ -29,7 +31,7 @@ public class Move : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            goal = GameObject.Find("GoalPos");
+            //goal = GameObject.Find("GoalPos");
             move = move ? false : true;
             if (!move)
             {
@@ -40,7 +42,14 @@ public class Move : MonoBehaviour
         }
         if (goal != null)
         {
-            ToPos(goal.transform.position);
+            Vector2 RU = new Vector2(this.transform.position.x - user.transform.position.x, this.transform.position.z - user.transform.position.z);
+            RU = RU.normalized;
+            Vector2 goalpos = new Vector2(user.transform.position.x + RU.x * Mathf.Cos(Mathf.PI / 4) - RU.y * Mathf.Sin(Mathf.PI / 4), user.transform.position.z + RU.x * Mathf.Sin(Mathf.PI / 4) + RU.y * Mathf.Cos(Mathf.PI / 4));
+            //Mathf.Cos(45);
+
+            Debug.Log(Mathf.Cos(Mathf.PI/4));
+            goal.transform.position = new Vector3(goalpos.x, 0f, goalpos.y);
+            ToPos(new Vector3(goalpos.x,0f,goalpos.y));
         }
 
     }
@@ -53,23 +62,13 @@ public class Move : MonoBehaviour
         if (move)
         {
             Vector2 toOther = new Vector2(target.x - this.transform.position.x, target.z - this.transform.position.z);
-            //Debug.Log(toOther);
             toOther.Normalize();
-            //Debug.Log(toOther);
             Vector2 faceTo = new Vector2(face.transform.position.x - this.transform.position.x, face.transform.position.z - this.transform.position.z);
             faceTo.Normalize();
             float dot = toOther.x * faceTo.x + toOther.y * faceTo.y;
             float cross = toOther.x * faceTo.y - toOther.y * faceTo.x;
-            //Debug.Log(faceTo);
-            //Debug.Log(Vector2.Dot(faceTo, target));
-            Debug.Log(dot);
-            Debug.Log(cross);
-            //Debug.Log(Vector2.Angle(faceTo, target));
-            //Debug.Log(Vector3.Cross(new Vector2(faceTo.x, faceTo.z), new Vector2(target.x, target.z)));
-            //Vector2.SignedAngle
-            //Debug.Log(Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0,target.y,0)));
-            //Debug.Log(Vector3.Dot(faceTo, toOther));
             saving.check.Add(Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)));
+            //Debug.Log(Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)));
             if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > 0.1f)
             {
                 //Debug.Log(Vector3.Dot(faceTo, toOther));
