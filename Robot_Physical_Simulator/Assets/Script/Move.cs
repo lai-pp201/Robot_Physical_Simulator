@@ -12,8 +12,8 @@ public class Move : MonoBehaviour
     public float leftWheelSpeed;
     public float rightWheelSpeed;
     bool move = false;
-    float RTSpeed = 2f;
-    float MVSpeed = 5f;
+    float RTSpeed = 3f;
+    float MVSpeed = 7f;
     float MVadd = 0.0f;
     float RTadd = 0.0f;
     float speedPoint1 = 0.3f;
@@ -23,6 +23,11 @@ public class Move : MonoBehaviour
     float acceptError = 0.2f;
     float acceptPosError = 0.1f;
     float STTime = 0f;
+    float pointTime = 0;
+    float pointStopDuration = 0.04f;
+    float pointMoveDuration = 0.3f;
+    bool isPointZero = false;
+    bool isPointMove = true;
     public class Data
     {
         public List<float> Time = new List<float>();
@@ -50,7 +55,7 @@ public class Move : MonoBehaviour
             move = move ? false : true;
             if (!move)
             {
-                SaveData.Save(saving, "monitor_mv5_rt2_er0.2");
+                SaveData.Save(saving, "monitor_Point5");
                 saving.check.Clear();
                 saving.AngleCross.Clear();
                 saving.Foward.Clear();
@@ -63,6 +68,7 @@ public class Move : MonoBehaviour
             else
             {
                 STTime = Time.time;
+                pointTime = Time.time;
             }
         }
         if (goal != null)
@@ -151,11 +157,13 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(-1);
                         if (cross > rtPoint1)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = -(RTSpeed + RTadd);
                             leftWheelSpeed = RTSpeed + RTadd;
                         }
                         else
                         {
+                            isPointMove = true;
                             rightWheelSpeed = -RTSpeed;
                             leftWheelSpeed = RTSpeed;
                         }
@@ -165,11 +173,13 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(-1);
                         if (cross < -rtPoint1)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = (RTSpeed + RTadd);
                             leftWheelSpeed = -(RTSpeed + RTadd);
                         }
                         else
                         {
+                            isPointMove = true;
                             rightWheelSpeed = RTSpeed;
                             leftWheelSpeed = -RTSpeed;
                         }
@@ -179,16 +189,19 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(1);
                         if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > speedPoint2)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = (MVSpeed + MVadd);
                             leftWheelSpeed = MVSpeed + MVadd;
                         }
                         else if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) < speedPoint1)
                         {
+                            isPointMove = true;
                             rightWheelSpeed = (MVSpeed - MVadd);
                             leftWheelSpeed = MVSpeed - MVadd;
                         }
                         else
                         {
+                            isPointMove = false;
                             rightWheelSpeed = MVSpeed;
                             leftWheelSpeed = MVSpeed;
                         }
@@ -202,11 +215,13 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(-1);
                         if (cross > rtPoint1)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = (RTSpeed + RTadd);
                             leftWheelSpeed = -(RTSpeed + RTadd);
                         }
                         else
                         {
+                            isPointMove = true;
                             rightWheelSpeed = RTSpeed;
                             leftWheelSpeed = -RTSpeed;
                         }
@@ -217,11 +232,13 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(-1);
                         if (cross < -rtPoint1)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = -(RTSpeed + RTadd);
                             leftWheelSpeed = RTSpeed + RTadd;
                         }
                         else
                         {
+                            isPointMove = true;
                             rightWheelSpeed = -RTSpeed;
                             leftWheelSpeed = RTSpeed;
                         }
@@ -231,16 +248,19 @@ public class Move : MonoBehaviour
                         saving.Foward.Add(1);
                         if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > speedPoint2)
                         {
+                            isPointMove = false;
                             rightWheelSpeed = -(MVSpeed + MVadd);
                             leftWheelSpeed = -(MVSpeed + MVadd);
                         }
                         else if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) < speedPoint1)
                         {
+                            isPointMove = true;
                             rightWheelSpeed = -(MVSpeed - MVadd);
                             leftWheelSpeed = -(MVSpeed - MVadd);
                         }
                         else
                         {
+                            isPointMove = false;
                             rightWheelSpeed = -MVSpeed;
                             leftWheelSpeed = -MVSpeed;
                         }
@@ -261,6 +281,34 @@ public class Move : MonoBehaviour
             leftWheelSpeed = 0;
         }
         #endregion move
+        PointMove(isPointMove);
+    }
+    void PointMove(bool isPoint)
+    {
+        if (isPointZero)
+        {
+            if (Time.time - pointTime > pointStopDuration)
+            {
+                isPointZero = false;
+                pointTime = Time.time;
+            }
+        }
+        else
+        {
+            if (Time.time - pointTime > pointMoveDuration)
+            {
+                isPointZero = true;
+                pointTime = Time.time;
+            }
+        }
+        if (isPoint)
+        {
+            if (isPointZero)
+            {
+                rightWheelSpeed = 0;
+                leftWheelSpeed = 0;
+            }
+        }
     }
 
 }
