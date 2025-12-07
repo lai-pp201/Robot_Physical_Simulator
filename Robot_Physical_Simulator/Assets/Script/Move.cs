@@ -11,6 +11,7 @@ public class Move : MonoBehaviour
     public GameObject user;
     public float leftWheelSpeed;
     public float rightWheelSpeed;
+    public float Robotd = 0.5f;
     bool move = false;
     float RTSpeed = 3f;
     float MVSpeed = 7f;
@@ -27,7 +28,7 @@ public class Move : MonoBehaviour
     float pointStopDuration = 0.04f;
     float pointMoveDuration = 0.3f;
     bool isPointZero = false;
-    bool isPointMove = true;
+    bool isPointMove = false;
     public class Data
     {
         public List<float> Time = new List<float>();
@@ -55,7 +56,7 @@ public class Move : MonoBehaviour
             move = move ? false : true;
             if (!move)
             {
-                SaveData.Save(saving, "monitor_Point5");
+                SaveData.Save(saving, "monitor_newmove");
                 saving.check.Clear();
                 saving.AngleCross.Clear();
                 saving.Foward.Clear();
@@ -273,6 +274,7 @@ public class Move : MonoBehaviour
                 rightWheelSpeed = 0;
                 leftWheelSpeed = 0;
             }
+             CaculateBestWheelSpeed(target);
         }
         else
         {
@@ -281,6 +283,7 @@ public class Move : MonoBehaviour
             leftWheelSpeed = 0;
         }
         #endregion move
+        
         PointMove(isPointMove);
     }
     void PointMove(bool isPoint)
@@ -308,6 +311,43 @@ public class Move : MonoBehaviour
                 rightWheelSpeed = 0;
                 leftWheelSpeed = 0;
             }
+        }
+    }
+
+    void CaculateBestWheelSpeed(Vector3 target)
+    {
+        Vector2 faceTo = new Vector2(face.transform.position.x - this.transform.position.x, face.transform.position.z - this.transform.position.z);
+        faceTo.Normalize();
+        Vector2 target2D = new Vector2(target.x, target.z);
+        Vector2 tracker2D = new Vector2(this.transform.position.x, this.transform.position.z);
+        Vector2 toOther = target2D - tracker2D;
+        Vector2 toOther_Raw = toOther;
+        toOther.Normalize();
+        float dot = toOther.x * faceTo.x + toOther.y * faceTo.y;
+        if (dot > 0)
+        {
+            Vector2 n = new Vector2(-faceTo.y, faceTo.x); //faceTo的垂直向量
+            float R = ((target2D.x - tracker2D.x) * (target2D.x - tracker2D.x) + (target2D.y - tracker2D.y) * (target2D.y - tracker2D.y)) / (2 * (toOther_Raw.x * n.x + toOther_Raw.y * n.y));
+            Vector2 PointO = new Vector2(tracker2D.x + R * n.x, tracker2D.y + R * n.y);
+            float thettaa = 2 * Mathf.Asin(Vector2.Distance(target2D, tracker2D) / (2 * Mathf.Abs(R)));
+            Debug.Log(thettaa * (Mathf.Abs(R) - Robotd) / thettaa * (Mathf.Abs(R) + Robotd));
+            rightWheelSpeed = MVSpeed;
+            leftWheelSpeed = MVSpeed * ((thettaa * (Mathf.Abs(R) - Robotd)) / (thettaa * (Mathf.Abs(R) + Robotd)));
+        }
+        else if(dot < 0)
+        {
+            Vector2 n = new Vector2(-faceTo.y, faceTo.x); //faceTo的垂直向量
+            n = -n;
+            float R = ((target2D.x - tracker2D.x) * (target2D.x - tracker2D.x) + (target2D.y - tracker2D.y) * (target2D.y - tracker2D.y)) / (2 * (toOther_Raw.x * n.x + toOther_Raw.y * n.y));
+            Vector2 PointO = new Vector2(tracker2D.x + R * n.x, tracker2D.y + R * n.y);
+            float thettaa = 2 * Mathf.Asin(Vector2.Distance(target2D, tracker2D) / (2 * Mathf.Abs(R)));
+            rightWheelSpeed = -(MVSpeed * ((thettaa * (Mathf.Abs(R) - Robotd)) / (thettaa * (Mathf.Abs(R) + Robotd))));
+            leftWheelSpeed = -MVSpeed;
+        }
+        else
+        {
+            rightWheelSpeed = 0;
+            leftWheelSpeed = 0;
         }
     }
 
