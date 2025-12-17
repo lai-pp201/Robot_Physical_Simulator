@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.WebSockets;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,24 +12,16 @@ public class Move : MonoBehaviour
     public GameObject user;
     public float leftWheelSpeed;
     public float rightWheelSpeed;
-    public float Robotd = 0.5f;
+    //public float Robotd = 0.5f;
     bool move = false;
     float RTSpeed = 3f;
     float MVSpeed = 7f;
-    float MVadd = 0.0f;
-    float RTadd = 0.0f;
-    float speedPoint1 = 0.3f;
-    float speedPoint2 = 1.5f;
-    float rtPoint1 = 0.25f;
     float safeDis = 0.6f;
-    float acceptError = 0.2f;
-    float acceptPosError = 0.1f;
-    float STTime = 0f;
-    float pointTime = 0;
-    float pointStopDuration = 0.04f;
-    float pointMoveDuration = 0.3f;
-    bool isPointZero = false;
-    bool isPointMove = false;
+    private RobotMoveType RunType;
+    public float maxAngleCrossError = 0f;
+    public float minAngleCrossError = -0.2f;
+    public float notAcceptCrossError = -0.5f;
+    bool isSafeTarget = false;
     public class Data
     {
         public List<float> Time = new List<float>();
@@ -52,303 +45,219 @@ public class Move : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            //goal = GameObject.Find("GoalPos");
+            //goal = GameObject.Find("0");
             move = move ? false : true;
-            if (!move)
-            {
-                SaveData.Save(saving, "monitor_newmove");
-                saving.check.Clear();
-                saving.AngleCross.Clear();
-                saving.Foward.Clear();
-                saving.Position.Clear();
-                saving.AngleDot.Clear();
-                saving.FaceTo.Clear();
-                saving.Time.Clear();
-                Debug.Log("儲存並清空");
-            }
-            else
-            {
-                STTime = Time.time;
-                pointTime = Time.time;
-            }
+            //if (!move)
+            //{
+            //    //SaveData.Save(saving, "20251201_pointTest");
+            //    //saving.check.Clear();
+            //    //saving.AngleCross.Clear();
+            //    //saving.Foward.Clear();
+            //    //saving.Position.Clear();
+            //    //saving.AngleDot.Clear();
+            //    //saving.FaceTo.Clear();
+            //    //saving.Time.Clear();
+            //    //saving.CirclePoint.Clear();
+            //    //Debug.Log("儲存並清空");
+            //}
+            //else
+            //{
+            //    //STTime = Time.time;
+            //    //pointTime = Time.time;
+            //}
         }
         if (goal != null)
         {
-            Vector2 RU = new Vector2(this.transform.position.x - user.transform.position.x, this.transform.position.z - user.transform.position.z);
-            RU = RU.normalized;
-            Vector2 goalpos = new Vector2(user.transform.position.x + RU.x * Mathf.Cos(Mathf.PI / 4) - RU.y * Mathf.Sin(Mathf.PI / 4), user.transform.position.z + RU.x * Mathf.Sin(Mathf.PI / 4) + RU.y * Mathf.Cos(Mathf.PI / 4));
-            //Mathf.Cos(45);
-
-            //Debug.Log(Mathf.Cos(Mathf.PI/4));
-            goal.transform.position = new Vector3(goalpos.x, 0f, goalpos.y);
-            ToPos(new Vector3(goalpos.x,0f,goalpos.y));
+            CheckType(CheckSafety(CaculateCircleGoal()));
         }
-
+        Debug.Log(RunType.ToString());
     }
-    private void OnCollisionEnter(Collision collision)
+    Vector2 CaculateCircleGoal()
     {
-        Debug.Log(collision.gameObject.name);
+        Vector2 RU = new Vector2(this.transform.position.x - user.transform.position.x, this.transform.position.z - user.transform.position.z);
+        RU = RU.normalized;
+        Vector2 goalpos = new Vector2(user.transform.position.x + RU.x * Mathf.Cos(Mathf.PI / 4) - RU.y * Mathf.Sin(Mathf.PI / 4), user.transform.position.z + RU.x * Mathf.Sin(Mathf.PI / 4) + RU.y * Mathf.Cos(Mathf.PI / 4));
+        return goalpos;
     }
-    public void ToPos(Vector3 target)
+    Vector2 CheckSafety(Vector2 nowGoal)
     {
-        Vector2 userVec2 = new Vector2(user.transform.position.x, user.transform.position.z);
-        float d = Vector2.Distance(new Vector2(this.transform.position.x, this.transform.position.z), userVec2);
-        float sinTheta = safeDis / d;               // r / d
-        float thetaRad = Mathf.Asin(sinTheta);     // 弧度
-        float thetaDeg = thetaRad * Mathf.Rad2Deg;
-        float ang = Vector2.Angle(new Vector2(user.transform.position.x - this.transform.position.x, user.transform.position.z - this.transform.position.z), new Vector2(goal.transform.position.x - this.transform.position.x, goal.transform.position.z - this.transform.position.z));
-        Vector2 ut = new Vector2(this.transform.position.x - user.transform.position.x, this.transform.position.z - user.transform.position.z);
-        Vector2 gt = new Vector2(this.transform.position.x - goal.transform.position.x, this.transform.position.z - goal.transform.position.z);
-        ut = ut.normalized;
-        gt = gt.normalized;
-        float angcross = ut.x * gt.y - ut.y * gt.x; //計算在左側或右側
-        bool checkarive = false;
-        Vector2 n = new Vector2(-ut.y, ut.x);  //向量旋轉
-        float a = (safeDis * safeDis) / d; //係數
-        float h = Mathf.Sqrt(safeDis * safeDis - a * a); //係數
-        Vector2 t1 = userVec2 + ut * a + n * h; //切點一
-        Vector2 t2 = userVec2 + ut * a - n * h; //切點二
-        t1 = t1 + t1 - userVec2;
-        t2 = t2 + t2 - userVec2;
-        //Debug.Log(angcross);
-        if (d <= safeDis)
+        Vector2 trackerPos2D = new Vector2(this.transform.position.x, this.transform.position.z);
+        Vector2 userPos2D = new Vector2(user.transform.position.x, user.transform.position.z);
+        float dis = Vector2.Distance(trackerPos2D, userPos2D);
+        if (dis <= safeDis)
         {
-            checkarive = true;
+            Vector2 target = new Vector2(2 * trackerPos2D.x - userPos2D.x, 2 * trackerPos2D.y - userPos2D.y);
+            isSafeTarget = true;
+            return target;
         }
-        else if (thetaDeg > ang)
+        else
         {
-            if (angcross <= 0)
-            {
-                target = new Vector3(t1.x, 0f, t1.y);
-            }
-            else
-            {
-                target = new Vector3(t2.x, 0f, t2.y);
-            }
+            isSafeTarget = false;
+            return nowGoal;
         }
-        #region move
-        if (move)
+    }
+    enum RobotMoveType
+    {
+        Foward,
+        Rotate,
+        Both,
+        Break,
+        Stop
+    }
+    void SetRobotSpeed(RobotMoveType Type, bool isFlip, bool isNeg)
+    {
+        Vector2 speedboth = new Vector2(0f, 0f);
+        switch (Type)
         {
-            if (checkarive)
+            case RobotMoveType.Foward:
+                speedboth = Foward();
+                break;
+            case RobotMoveType.Rotate:
+                speedboth = Rotate();
+                break;
+            case RobotMoveType.Both:
+                speedboth = Both();
+                break;
+            case RobotMoveType.Break:
+                speedboth = Break();
+                break;
+            case RobotMoveType.Stop:
+                speedboth = new Vector2(0f, 0f);
+                break;
+        }
+        if (!isFlip)
+        {
+            rightWheelSpeed = speedboth.x;
+            leftWheelSpeed = speedboth.y;
+        }
+        else
+        {
+            rightWheelSpeed = speedboth.y;
+            leftWheelSpeed = speedboth.x;
+        }
+        if (isNeg)
+        {
+            rightWheelSpeed = -rightWheelSpeed;
+            leftWheelSpeed = -leftWheelSpeed;
+        }
+    }
+    Vector2 Rotate()
+    {
+        Vector2 rot = new Vector2(-RTSpeed, RTSpeed);
+        return rot;
+    }
+    Vector2 Foward()
+    {
+        Vector2 move = new Vector2(MVSpeed, MVSpeed);
+        return move;
+    }
+    Vector2 Both()
+    {
+        Vector2 both = new Vector2(1.5f * MVSpeed, MVSpeed);
+        return both;
+    }
+    Vector2 Break()
+    {
+        Vector2 bre = new Vector2(0f, 0f);
+        return bre;
+    }
+    void CheckType(Vector2 target)
+    {
+        bool neg = false;
+        bool reverse = false;
+        goal.transform.position = new Vector3(target.x, 0.5f, target.y);
+        Vector2 faceTo = new Vector2(face.transform.position.x - this.transform.position.x, face.transform.position.z - this.transform.position.z);
+        faceTo.Normalize();
+        Vector2 trackerPos2D = new Vector2(this.transform.position.x, this.transform.position.z);
+        Vector2 userPos2D = new Vector2(user.transform.position.x, user.transform.position.z);
+        Vector2 toOther = target - trackerPos2D;
+        float dot = toOther.x * faceTo.x + toOther.y * faceTo.y;
+        float cross = toOther.x * faceTo.y - toOther.y * faceTo.x;
+        //Debug.Log(cross);
+        if (isSafeTarget)
+        {
+            if (dot >= 0)
             {
-                if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > acceptPosError)
+                if (cross > 0.2f)
                 {
-                    target = new Vector3(2 * this.transform.position.x - user.transform.position.x, 0f, 2 * this.transform.position.z - user.transform.position.z);
+                    RunType = RobotMoveType.Rotate;
                 }
-            }
-
-            Vector2 toOther = new Vector2(target.x - this.transform.position.x, target.z - this.transform.position.z);
-            toOther.Normalize();
-            Vector2 faceTo = new Vector2(face.transform.position.x - this.transform.position.x, face.transform.position.z - this.transform.position.z);
-            faceTo.Normalize();
-            float dot = toOther.x * faceTo.x + toOther.y * faceTo.y;
-            float cross = toOther.x * faceTo.y - toOther.y * faceTo.x;
-            saving.Time.Add(Time.time - STTime);
-            saving.AngleCross.Add(cross);
-            saving.AngleDot.Add(dot);
-            saving.FaceTo.Add(faceTo);
-            saving.Position.Add(new Vector2(this.transform.position.x, this.transform.position.z));
-            saving.check.Add(Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), user.transform.position - new Vector3(0, user.transform.position.y, 0)));
-            if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > acceptPosError)
-            {
-                if (dot >= 0)
+                else if (cross < -0.2f)
                 {
-                    if (cross > acceptError)
-                    {
-                        saving.Foward.Add(-1);
-                        if (cross > rtPoint1)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = -(RTSpeed + RTadd);
-                            leftWheelSpeed = RTSpeed + RTadd;
-                        }
-                        else
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = -RTSpeed;
-                            leftWheelSpeed = RTSpeed;
-                        }
-                    }
-                    else if (cross < -acceptError)
-                    {
-                        saving.Foward.Add(-1);
-                        if (cross < -rtPoint1)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = (RTSpeed + RTadd);
-                            leftWheelSpeed = -(RTSpeed + RTadd);
-                        }
-                        else
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = RTSpeed;
-                            leftWheelSpeed = -RTSpeed;
-                        }
-                    }
-                    else
-                    {
-                        saving.Foward.Add(1);
-                        if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > speedPoint2)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = (MVSpeed + MVadd);
-                            leftWheelSpeed = MVSpeed + MVadd;
-                        }
-                        else if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) < speedPoint1)
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = (MVSpeed - MVadd);
-                            leftWheelSpeed = MVSpeed - MVadd;
-                        }
-                        else
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = MVSpeed;
-                            leftWheelSpeed = MVSpeed;
-                        }
-
-                    }
+                    RunType = RobotMoveType.Rotate;
+                    neg = true;
                 }
                 else
                 {
-                    if (cross > acceptError)
-                    {
-                        saving.Foward.Add(-1);
-                        if (cross > rtPoint1)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = (RTSpeed + RTadd);
-                            leftWheelSpeed = -(RTSpeed + RTadd);
-                        }
-                        else
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = RTSpeed;
-                            leftWheelSpeed = -RTSpeed;
-                        }
-
-                    }
-                    else if (cross < -acceptError)
-                    {
-                        saving.Foward.Add(-1);
-                        if (cross < -rtPoint1)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = -(RTSpeed + RTadd);
-                            leftWheelSpeed = RTSpeed + RTadd;
-                        }
-                        else
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = -RTSpeed;
-                            leftWheelSpeed = RTSpeed;
-                        }
-                    }
-                    else
-                    {
-                        saving.Foward.Add(1);
-                        if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) > speedPoint2)
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = -(MVSpeed + MVadd);
-                            leftWheelSpeed = -(MVSpeed + MVadd);
-                        }
-                        else if (Vector3.Distance(this.transform.position - new Vector3(0, this.transform.position.y, 0), target - new Vector3(0, target.y, 0)) < speedPoint1)
-                        {
-                            isPointMove = true;
-                            rightWheelSpeed = -(MVSpeed - MVadd);
-                            leftWheelSpeed = -(MVSpeed - MVadd);
-                        }
-                        else
-                        {
-                            isPointMove = false;
-                            rightWheelSpeed = -MVSpeed;
-                            leftWheelSpeed = -MVSpeed;
-                        }
-                    }
+                    RunType = RobotMoveType.Foward;
                 }
             }
             else
             {
-                saving.Foward.Add(0);
-                rightWheelSpeed = 0;
-                leftWheelSpeed = 0;
+                reverse = true;
+                if (cross > 0.2f)
+                {
+                    RunType = RobotMoveType.Rotate;
+                    neg = true;
+                }
+                else if (cross < -0.2f)
+                {
+                    RunType = RobotMoveType.Rotate;
+                }
+                else
+                {
+                    RunType = RobotMoveType.Foward;
+                    neg = true;
+                }
             }
-             CaculateBestWheelSpeed(target);
+        }
+        else if (dot >= 0)
+        {
+            if (cross < notAcceptCrossError)
+            {
+                RunType = RobotMoveType.Rotate;
+                neg = true;
+            }
+            else if (cross < minAngleCrossError)
+            {
+                RunType = RobotMoveType.Both;
+            }
+            else if (cross > maxAngleCrossError)
+            {
+                RunType = RobotMoveType.Rotate;
+            }
+            else
+            {
+                RunType = RobotMoveType.Foward;
+            }
         }
         else
         {
-            saving.Foward.Add(0);
-            rightWheelSpeed = 0;
-            leftWheelSpeed = 0;
-        }
-        #endregion move
-        
-        PointMove(isPointMove);
-    }
-    void PointMove(bool isPoint)
-    {
-        if (isPointZero)
-        {
-            if (Time.time - pointTime > pointStopDuration)
+            reverse = true;
+            neg = true;
+            if (cross < -maxAngleCrossError)
             {
-                isPointZero = false;
-                pointTime = Time.time;
+                RunType = RobotMoveType.Rotate;
+            }
+            else if (cross > -notAcceptCrossError)
+            {
+                RunType = RobotMoveType.Rotate;
+                neg = false;
+            }
+            else if (cross > -minAngleCrossError)
+            {
+                RunType = RobotMoveType.Both;
+            }
+            else
+            {
+                RunType = RobotMoveType.Foward;
             }
         }
-        else
+        if (!move)
         {
-            if (Time.time - pointTime > pointMoveDuration)
-            {
-                isPointZero = true;
-                pointTime = Time.time;
-            }
+            RunType = RobotMoveType.Stop;
         }
-        if (isPoint)
-        {
-            if (isPointZero)
-            {
-                rightWheelSpeed = 0;
-                leftWheelSpeed = 0;
-            }
-        }
+        Debug.Log(reverse);
+        SetRobotSpeed(RunType, reverse, neg);
     }
-
-    void CaculateBestWheelSpeed(Vector3 target)
-    {
-        Vector2 faceTo = new Vector2(face.transform.position.x - this.transform.position.x, face.transform.position.z - this.transform.position.z);
-        faceTo.Normalize();
-        Vector2 target2D = new Vector2(target.x, target.z);
-        Vector2 tracker2D = new Vector2(this.transform.position.x, this.transform.position.z);
-        Vector2 toOther = target2D - tracker2D;
-        Vector2 toOther_Raw = toOther;
-        toOther.Normalize();
-        float dot = toOther.x * faceTo.x + toOther.y * faceTo.y;
-        if (dot > 0)
-        {
-            Vector2 n = new Vector2(-faceTo.y, faceTo.x); //faceTo的垂直向量
-            float R = ((target2D.x - tracker2D.x) * (target2D.x - tracker2D.x) + (target2D.y - tracker2D.y) * (target2D.y - tracker2D.y)) / (2 * (toOther_Raw.x * n.x + toOther_Raw.y * n.y));
-            Vector2 PointO = new Vector2(tracker2D.x + R * n.x, tracker2D.y + R * n.y);
-            float thettaa = 2 * Mathf.Asin(Vector2.Distance(target2D, tracker2D) / (2 * Mathf.Abs(R)));
-            Debug.Log(thettaa * (Mathf.Abs(R) - Robotd) / thettaa * (Mathf.Abs(R) + Robotd));
-            rightWheelSpeed = MVSpeed;
-            leftWheelSpeed = MVSpeed * ((thettaa * (Mathf.Abs(R) - Robotd)) / (thettaa * (Mathf.Abs(R) + Robotd)));
-        }
-        else if(dot < 0)
-        {
-            Vector2 n = new Vector2(-faceTo.y, faceTo.x); //faceTo的垂直向量
-            n = -n;
-            float R = ((target2D.x - tracker2D.x) * (target2D.x - tracker2D.x) + (target2D.y - tracker2D.y) * (target2D.y - tracker2D.y)) / (2 * (toOther_Raw.x * n.x + toOther_Raw.y * n.y));
-            Vector2 PointO = new Vector2(tracker2D.x + R * n.x, tracker2D.y + R * n.y);
-            float thettaa = 2 * Mathf.Asin(Vector2.Distance(target2D, tracker2D) / (2 * Mathf.Abs(R)));
-            rightWheelSpeed = -(MVSpeed * ((thettaa * (Mathf.Abs(R) - Robotd)) / (thettaa * (Mathf.Abs(R) + Robotd))));
-            leftWheelSpeed = -MVSpeed;
-        }
-        else
-        {
-            rightWheelSpeed = 0;
-            leftWheelSpeed = 0;
-        }
-    }
-
 }
